@@ -75,7 +75,6 @@ class Agent:
         self.lastReproduced = -1
         self.lastSugar = 0
         self.lastSpice = 0
-        self.lastReproduced = 0
         self.causeOfDeath = None
         self.lastUniversalSpiceIncomeTimestep = 0
         self.lastUniversalSugarIncomeTimestep = 0
@@ -413,12 +412,6 @@ class Agent:
         self.timestep = timestep
         # Prevent dead or already moved agent from moving
         if self.alive == True and self.cell != None and self.lastMoved != self.timestep:
-            self.sugar += self.universalSugar
-            self.spice += self.universalSpice
-            self.lastReproduced = 0
-            self.lastSugar = self.sugar
-            self.lastSpice = self.spice
-            self.lastReproduced = 0
             self.lastSugar = self.sugar
             self.lastSpice = self.spice
             self.lastMoved = self.timestep
