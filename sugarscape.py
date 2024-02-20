@@ -4,6 +4,7 @@ import agent
 import cell
 import disease
 import environment
+import ethics
 
 import getopt
 import hashlib
@@ -54,7 +55,6 @@ class Sugarscape:
                              "agentWealthTotal": 0, "environmentWealthTotal": 0, "agentWealthCollected": 0, "agentWealthBurnRate": 0, "agentMeanTimeToLive": 0, "agentWealths": [],
                              "agentTimesToLive": [], "agentTimesToLiveAgeLimited": [], "agentTotalMetabolism": 0}
         self.log = open(configuration["logfile"], 'a') if configuration["logfile"] != None else None
-        self.logAgent = None
 
     def addAgent(self, agent):
         self.agents.append(agent)
@@ -69,17 +69,8 @@ class Sugarscape:
         height = self.environment.height
         width = self.environment.width
         radialDispersion = math.sqrt(max(startX, width - startX)**2 + max(startY, height - startY)**2) * (radius / width)
-        seasons = True if self.configuration["environmentSeasonInterval"] > 0 else False
         for i in range(height):
             for j in range(width):
-                if self.environment.findCell(i, j) == None:
-                    newCell = cell.Cell(i, j, self.environment)
-                    if seasons == True:
-                        if j >= self.environment.equator:
-                            newCell.season = "summer"
-                        else:
-                            newCell.season = "winter"
-                    self.environment.placeCell(newCell, i, j)
                 euclideanDistanceToStart = math.sqrt((startX - i)**2 + (startY - j)**2)
                 currDispersion = 1 + maxSpice * (1 - euclideanDistanceToStart / radialDispersion)
                 cellMaxCapacity = min(currDispersion, maxSpice)
@@ -92,17 +83,8 @@ class Sugarscape:
         height = self.environment.height
         width = self.environment.width
         radialDispersion = math.sqrt(max(startX, width - startX)**2 + max(startY, height - startY)**2) * (radius / width)
-        seasons = True if self.configuration["environmentSeasonInterval"] > 0 else False
         for i in range(height):
             for j in range(width):
-                if self.environment.findCell(i, j) == None:
-                    newCell = cell.Cell(i, j, self.environment)
-                    if seasons == True:
-                        if j >= self.environment.equator:
-                            newCell.season = "summer"
-                        else:
-                            newCell.season = "winter"
-                    self.environment.placeCell(newCell, i, j)
                 euclideanDistanceToStart = math.sqrt((startX - i)**2 + (startY - j)**2)
                 currDispersion = 1 + maxSugar * (1 - euclideanDistanceToStart / radialDispersion)
                 cellMaxCapacity = min(currDispersion, maxSugar)
@@ -138,6 +120,23 @@ class Sugarscape:
             agentConfiguration = agentEndowments[i]
             agentID = self.generateAgentID()
             a = agent.Agent(agentID, self.timestep, c, agentConfiguration)
+            # If using a different decision model, replace new agent with instance of child class
+            if "altruisticHalfLookahead" in agentConfiguration["decisionModel"]:
+                a = ethics.Bentham(agentID, self.timestep, c, agentConfiguration, "halfLookahead")
+                a.selfishnessFactor = 0
+            elif "altruisticNoLookahead" in agentConfiguration["decisionModel"]:
+                a = ethics.Bentham(agentID, self.timestep, c, agentConfiguration)
+                a.selfishnessFactor = 0
+            elif "benthamHalfLookahead" in agentConfiguration["decisionModel"]:
+                a = ethics.Bentham(agentID, self.timestep, c, agentConfiguration, "halfLookahead")
+            elif "benthamNoLookahead" in agentConfiguration["decisionModel"]:
+                a = ethics.Bentham(agentID, self.timestep, c, agentConfiguration)
+            elif "egoisticHalfLookahead" in agentConfiguration["decisionModel"]:
+                a = ethics.Bentham(agentID, self.timestep, c, agentConfiguration, "halfLookahead")
+                a.selfishnessFactor = 1
+            elif "egoisticNoLookahead" in agentConfiguration["decisionModel"]:
+                a = ethics.Bentham(agentID, self.timestep, c, agentConfiguration)
+                a.selfishnessFactor = 1
             c.agent = a
             self.agents.append(a)
 
@@ -172,6 +171,11 @@ class Sugarscape:
     def configureEnvironment(self, maxSugar, maxSpice):
         height = self.environment.height
         width = self.environment.width
+        for i in range(height):
+            for j in range(width):
+                newCell = cell.Cell(i, j, self.environment)
+                self.environment.setCell(newCell, i, j)
+
         startX1 = math.ceil(height * 0.7)
         startX2 = math.ceil(height * 0.3)
         startY1 = math.ceil(width * 0.3)
@@ -427,6 +431,8 @@ class Sugarscape:
             decisionModel = "none"
         universalSpice = configs["agentUniversalSpice"]
         universalSugar = configs["agentUniversalSugar"]
+        movementMode = configs["agentMovementMode"]
+        visionMode = configs["agentVisionMode"]
 
         configurations = {"aggressionFactor": {"endowments": [], "curr": aggressionFactor[0], "min": aggressionFactor[0], "max": aggressionFactor[1]},
                           "baseInterestRate": {"endowments": [], "curr": baseInterestRate[0], "min": baseInterestRate[0], "max": baseInterestRate[1]},
@@ -525,7 +531,8 @@ class Sugarscape:
         for i in range(numAgents):
             agentEndowment = {"seed": self.seed, "sex": sexes[i], "tags": tags.pop(),
                               "immuneSystem": immuneSystems.pop(), "inheritancePolicy": inheritancePolicy,
-                              "decisionModel": decisionModel}
+                              "decisionModel": decisionModel, "movementMode": movementMode,
+                              "visionMode": visionMode}
             for config in configurations:
                 # If sexes are enabled, ensure proper fertility and infertility ages are set
                 if sexes[i] == "female" and config == "femaleFertilityAge":
@@ -925,6 +932,7 @@ if __name__ == "__main__":
                      "agentMaxAge": [-1, -1],
                      "agentMaxFriends": [0, 0],
                      "agentMovement": [1, 6],
+                     "agentMovementMode": "cardinal",
                      "agentReplacements": 0,
                      "agentSelfishnessFactor": [-1, -1],
                      "agentSpiceMetabolism": [0, 0],
@@ -937,6 +945,7 @@ if __name__ == "__main__":
                      "agentUniversalSpice": [0,0],
                      "agentUniversalSugar": [0,0],
                      "agentVision": [1, 6],
+                     "agentVisionMode": "cardinal",
                      "debugMode": ["none"],
                      "diseaseAggressionPenalty": [0, 0],
                      "diseaseFertilityPenalty": [0, 0],

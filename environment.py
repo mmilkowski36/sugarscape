@@ -83,7 +83,7 @@ class Environment:
             for j in range(self.width):
                 self.grid[i][j].findNeighbors()
 
-    def findCellsInRange(self, startX, startY, gridRange):
+    def findCellsInCardinalRange(self, startX, startY, gridRange):
         cellsInRange = []
         for i in range(1, gridRange + 1):
             deltaNorth = (startY + i + self.height) % self.height
@@ -96,11 +96,29 @@ class Environment:
             cellsInRange.append({"cell": self.grid[deltaWest][startY], "distance": i})
         return cellsInRange
 
-    def placeCell(self, cell, x, y):
-        self.grid[x][y] = cell
+    def findCellsInRadialRange(self, startX, startY, gridRange):
+        cellsInRange = []
+        # Iterate through the bounding box of the circle
+        for i in range(startX - gridRange, startX + gridRange + 1):
+            for j in range(startY - gridRange, startY + gridRange + 1):
+                euclideanDistance = math.sqrt(pow((i - startX), 2) + pow((j - startY), 2))
+                # If agent can see at least part of a cell, they should be allowed to consider it
+                if euclideanDistance < gridRange + 1:
+                    deltaX = (i + self.height) % self.height
+                    deltaY = (j + self.width) % self.width
+                    cellsInRange.append({"cell": self.grid[deltaX][deltaY], "distance": euclideanDistance})
+        return cellsInRange
 
     def resetCell(self, x, y):
         self.grid[x][y] = None
+
+    def setCell(self, cell, x, y):
+        if self.grid[x][y] == None:
+            if y >= self.equator:
+                cell.season = self.seasonNorth
+            else:
+                cell.season = self.seasonSouth
+            self.grid[x][y] = cell
 
     def updatePollution(self):
         if self.pollutionDiffusionDelay > 0:
