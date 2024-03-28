@@ -9,9 +9,13 @@ class GUI:
         self.window = None
         self.canvas = None
         self.grid = [[None for j in range(self.sugarscape.environmentWidth)]for i in range(self.sugarscape.environmentHeight)]
+        # TODO: Add a simplified way to have a bunch of colors programatically chosen during runtime
         self.colors = {"sugar": "#F2FA00", "spice": "#9B4722", "sugarAndSpice": "#CFB20E", "noSex": "#FA3232", "female": "#FA32FA", "male": "#3232FA", "pollution": "#803280",
-                         "green": "#32FA32", "blue": "#3232FA", "red": "#FA3232", "pink": "#FA32FA", "yellow": "#FAFA32", "teal": "#32FAFA", "purple": "#6432FA", "orange": "#FA6432",
-                         "salmon": "#FA6464", "mint": "#64FA64", "blue2": "#3264FA"}
+                       "green": "#32FA32", "blue": "#3232FA", "red": "#FA3232", "pink": "#FA32FA", "yellow": "#FAFA32", "teal": "#32FAFA", "purple": "#6432FA", "orange": "#FA6432",
+                       "salmon": "#FA6464", "mint": "#64FA64", "blue2": "#3264FA",
+                       "none": "#32FA32", "benthamHalfLookaheadBinary": "#3232FA", "egoisticHalfLookaheadBinary": "#FA3232", "altruisticHalfLookaheadBinary": "#FA32FA",
+                       "benthamNoLookaheadBinary": "#FAFA32", "egoisticNoLookaheadBinary": "#32FAFA", "altruisticNoLookaheadBinary": "#6432FA", "benthamHalfLookaheadTop": "#FA6432",
+                       "egoisticHalfLookaheadTop": "#FA6464", "altruisticHalfLookaheadTop": "#64FA64", "benthamNoLookaheadTop": "#3264FA"}
         self.widgets = {}
         self.lastSelectedAgentColor = None
         self.lastSelectedEnvironmentColor = None
@@ -27,7 +31,7 @@ class GUI:
         self.stopSimulation = False
 
     def configureAgentColorNames(self):
-        return ["Disease", "Sex", "Tribes"]
+        return ["Disease", "Sex", "Tribes", "Decision Models"]
 
     def configureButtons(self, window):
         playButton = tkinter.Button(window, text="Play Simulation", command=self.doPlayButton)
@@ -61,7 +65,7 @@ class GUI:
 
         statsLabel = tkinter.Label(window, text="Timestep: - | Population: - | Metabolism: - | Movement: - | Vision: - | Gini: - | Trade Price: - | Trade Volume: -", font="Roboto 10", justify=tkinter.CENTER)
         statsLabel.grid(row=1, column=0, columnspan = self.menuTrayColumns, sticky="nsew")
-        cellLabel = tkinter.Label(window, text="Cell: - | Sugar: - | Spice: - | Pollution: - | Season: -\nAgent: - | Age: - | Sex: - | Sugar: - | Spice: - ", font="Roboto 10", justify=tkinter.CENTER)
+        cellLabel = tkinter.Label(window, text="Cell: - | Sugar: - | Spice: - | Pollution: - | Season: -\nAgent: - | Age: - | Sugar: - | Spice: - ", font="Roboto 10", justify=tkinter.CENTER)
         cellLabel.grid(row=2, column=0, columnspan = self.menuTrayColumns, sticky="nsew")
 
         self.widgets["playButton"] = playButton
@@ -201,11 +205,11 @@ class GUI:
         if cell.season == None:
             cellSeason = '-'
         cellStats = "Cell: ({0},{1}) | Sugar: {2}/{3} | Spice: {4}/{5} | Pollution: {6} | Season: {7}".format(cellX, cellY, cell.sugar, cell.maxSugar, cell.spice, cell.maxSpice, round(cell.pollution, 2), cellSeason)
-        agentStats = "Agent: - | Age: - | Sex: - | Vision: - | Movement: - | Sugar: - | Spice: - | Metabolism: -"
+        agentStats = "Agent: - | Age: - | Vision: - | Movement: - | Sugar: - | Spice: - | Metabolism: -"
         agent = cell.agent
         if agent != None:
-            agentStats = "Agent: {0} | Age: {1} | Sex: {2} | Vision: {3} | Movement: {4} | Sugar: {5} | Spice: {6} | Metabolism: {7}".format(str(agent), agent.age, agent.sex, round(agent.vision, 2), round(agent.movement, 2),
-                                                                                                                                    round(agent.sugar, 2), round(agent.spice, 2), round(((agent.sugarMetabolism + agent.spiceMetabolism) / 2), 2))
+            agentStats = "Agent: {0} | Age: {1} | Vision: {2} | Movement: {3} | Sugar: {4} | Spice: {5} | Metabolism: {6}".format(str(agent), agent.age, round(agent.vision, 2), round(agent.movement, 2),
+                                                                                                                        round(agent.sugar, 2), round(agent.spice, 2), round(((agent.sugarMetabolism + agent.spiceMetabolism) / 2), 2))
         cellStats += "\n  {0}".format(agentStats)
         self.lastSelectedCell = {'x': cellX, 'y': cellY}
         return cellStats
@@ -241,6 +245,8 @@ class GUI:
             return self.colors[agent.sex]
         elif agent.tribe != None and self.activeColorOptions["agent"] == "Tribes":
             return self.colors[agent.tribe]
+        elif agent.decisionModel != None and self.activeColorOptions["agent"] == "Decision Models":
+            return self.colors[agent.decisionModel]
         elif len(agent.diseases) > 0 and self.activeColorOptions["agent"] == "Disease":
             return self.colors["red"]
         elif len(agent.diseases) == 0 and self.activeColorOptions["agent"] == "Disease":
